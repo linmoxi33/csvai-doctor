@@ -110,9 +110,9 @@ csvcut: model: deepseek-flash (1 call(s), 0 cache hit(s))
 ### 2. `csvai` for what csvkit has no command for
 
 ```bash
-csvai classify orders.csv          # what are these columns, really?
-csvai extract orders.csv --column 备注 --fields phone,amount,deadline
-csvai ask orders.csv "按城市统计金额的平均值"
+csvai classify -f orders.csv       # what are these columns, really?
+csvai extract -f orders.csv --column 备注 --fields phone,amount,deadline
+csvai ask -f orders.csv "按城市统计金额的平均值"
 ```
 
 `classify` is the most useful of the three. It tells you that a column is a *company name*, not
@@ -120,7 +120,7 @@ csvai ask orders.csv "按城市统计金额的平均值"
 disagree:
 
 ```
-$ csvai classify orders.csv
+$ csvai classify -f orders.csv
 source: model
 
 column                   label             conf  match  reason
@@ -353,7 +353,7 @@ csvai/
   cli.py          the `csvai` command
 patches/
   0001-add-optional-ai-hook.patch    40 lines against csvkit 2.2.0
-tests/           151 tests
+tests/           164 tests
 tools/live_e2e.py  end-to-end proof against a real endpoint
 ```
 

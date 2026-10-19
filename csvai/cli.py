@@ -330,7 +330,11 @@ def build_parser():
 
     def add_common(target, with_input=True):
         if with_input:
-            target.add_argument('input', nargs='?', default='-',
+            # The input is a flag, not a positional: `ask` needs a positional for
+            # the prose request, and two optional-or-required positionals in a
+            # row make `ask --dry-run "按 city 排序"` swallow the request as the
+            # filename. Explicit is worth the extra six characters.
+            target.add_argument('-f', '--file', dest='input', default='-',
                                 help='CSV file, or - for stdin (default: -)')
         target.add_argument('--provider', help='override provider')
         target.add_argument('--model', help='override model')
@@ -357,8 +361,8 @@ def build_parser():
     p.set_defaults(func=cmd_extract)
 
     p = sub.add_parser('ask', help='run a natural-language request against a CSV')
-    add_common(p)
     p.add_argument('request', help='what you want, in prose')
+    add_common(p)
     p.add_argument('--dry-run', dest='dry_run', action='store_true',
                    help='show the compiled plan without running it')
     p.set_defaults(func=cmd_ask)

@@ -57,7 +57,7 @@ Anything outside those patterns **returns nothing** rather than a plausible wron
 
 ### Verification
 
-- **151** package tests
+- **164** package tests
 - **346** upstream csvkit tests still pass after the patch
 - `--help` **byte-identical** for 6 commands when csvai is not installed (compared against fixtures
   from a pristine checkout, run from a temp cwd)
