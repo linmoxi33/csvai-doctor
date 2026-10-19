@@ -1,0 +1,20 @@
+# Project lint policy.
+#
+# Rules chosen deliberately:
+#   E, F, W - pycodestyle errors/warnings and pyflakes: real bugs and typos.
+#   I       - import order, so diffs stay small across contributors.
+#
+# BLE (blind except) is intentionally NOT enabled: this package is built around
+# catching broad exceptions to degrade gracefully, so flagging `except Exception`
+# would push authors toward narrower catches that break the fallback contract.
+line-length = 120
+target-version = "py39"
+
+[lint]
+select = ["E", "F", "W", "I"]
+ignore = ["E501"]  # long lines are capped at 120 by the line-length above
+
+[lint.per-file-ignores]
+# The live end-to-end script is a diagnostic, not library code; each step
+# deliberately catches broadly so one failure still prints the rest.
+"tools/live_e2e.py" = ["BLE001"]

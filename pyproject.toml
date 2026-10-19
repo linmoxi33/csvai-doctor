@@ -1,0 +1,47 @@
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "csvai"
+version = "0.1.0"
+description = "Optional AI assistance for csvkit: natural-language queries, column classification, and text extraction, with deterministic fallbacks."
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "MIT" }
+authors = [
+    { name = "linmoxi33" },
+]
+keywords = ["csv", "csvkit", "llm", "ai", "data-cleaning", "cli"]
+classifiers = [
+    'Development Status :: 3 - Alpha',
+    'Environment :: Console',
+    'Intended Audience :: Developers',
+    'Intended Audience :: Science/Research',
+    'License :: OSI Approved :: MIT License',
+    'Operating System :: OS Independent',
+    'Programming Language :: Python :: 3',
+    'Topic :: Utilities',
+]
+
+# Deliberately dependency-free. csvkit, agate and friends come from the user's
+# existing install; adding an HTTP SDK here would double the footprint of a
+# feature most users never enable.
+dependencies = []
+
+[project.optional-dependencies]
+csvkit = ["csvkit>=2.2.0,<3"]
+dev = ["pytest>=7", "pytest-cov"]
+
+[project.scripts]
+csvai = "csvai.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/linmoxi33/csvai-doctor"
+
+[tool.setuptools]
+packages = ["csvai"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+filterwarnings = ["ignore::DeprecationWarning"]

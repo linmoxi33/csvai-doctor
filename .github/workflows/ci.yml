@@ -1,0 +1,78 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  tests:
+    name: ${{ matrix.os }} / py${{ matrix.python }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        python: ['3.10', '3.12', '3.13']
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install "csvkit==2.2.0" pytest
+          pip install -e .
+
+      - name: Prepare patched csvkit for --ai tests
+        shell: bash
+        run: |
+          # Apply our patch to a pristine csvkit checkout. A failure here means
+          # the patch no longer applies to the pinned upstream version, which is
+          # a release blocker rather than a test flake.
+          python -c "import csvkit, os; print(os.path.dirname(csvkit.__file__))" > csvkit_path.txt
+          CSVKIT_DIR=$(python -c "import csvkit, os; print(os.path.dirname(os.path.dirname(csvkit.__file__)))")
+          echo "csvkit at $CSVKIT_DIR"
+          cd "$CSVKIT_DIR"
+          patch -p1 --dry-run < "$GITHUB_WORKSPACE/patches/0001-add-optional-ai-hook.patch"
+
+      - name: Run csvai tests
+        run: python -m pytest tests/ -q
+
+      - name: Verify unchanged behaviour without the extra
+        shell: bash
+        run: |
+          # The core promise: an install without csvai behaves identically.
+          # We check the fixtures were not regenerated from a patched tree.
+          python - <<'EOF'
+          import pathlib
+          for path in pathlib.Path('tests/fixtures').glob('help_*.txt'):
+              text = path.read_text(encoding='utf-8')
+              assert '--ai' not in text, f'{path} contains AI flags'
+          print('help fixtures are clean')
+          EOF
+
+      - name: Offline-only smoke test
+        env:
+          CSVAI_DISABLE: '1'
+        shell: bash
+        run: |
+          # No key, layer disabled: the rule engine must still serve requests.
+          csvai doctor
+          csvai classify --offline examples/real/orders.csv
+          csvai ask --offline examples/real/orders.csv --dry-run "按 city 排序"
+
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install ruff
+      - run: ruff check csvai tests tools

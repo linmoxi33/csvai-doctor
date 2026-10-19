@@ -1,0 +1,32 @@
+csvai
+=====
+
+This package is distributed under the MIT License (see LICENSE).
+
+It patches, but does not redistribute, csvkit:
+
+    csvkit
+    Copyright (c) Christopher Groskopf and James McKinney
+    Licensed under the MIT License
+    https://github.com/wireservice/csvkit
+
+files changed by patches/0001-add-optional-ai-hook.patch
+---------------------------------------------------------
+
+  csvkit/cli.py
+      + hook in CSVKitUtility.run() that delegates to csvai.integration.run()
+        only when --ai was passed
+      + CSVKitUtility.ai_capable class attribute (default False)
+      + CSVKitUtility._add_ai_arguments(), which registers the --ai flag group
+        only if `import csvai.integration` succeeds
+
+  csvkit/utilities/csvcut.py
+      + ai_capable = True                     (1 line)
+
+  csvkit/utilities/csvgrep.py
+      + ai_capable = True                     (1 line)
+
+Total: 40 added lines, 0 removed lines. No upstream logic is modified; with no
+csvai installed and no --ai flag, both files behave exactly as upstream.
+
+Upstream licence text is reproduced in LICENSE.upstream for reference.

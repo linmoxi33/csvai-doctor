@@ -1,0 +1,83 @@
+--- a/csvkit/cli.py
++++ b/csvkit/cli.py
+@@ -132,6 +132,24 @@
+         A wrapper around the main loop of the utility which handles opening and
+         closing files.
+         """
++        # The AI branch is entered only when --ai was actually passed. With the
++        # flag absent this method is the upstream code, unchanged.
++        if getattr(self.args, 'ai_request', None):
++            try:
++                import csvai.integration
++            except ImportError as exc:  # pragma: no cover - flag implies package
++                self.argparser.error(f'--ai was given but the csvai package is unavailable: {exc}')
++            # The AI path profiles the input before executing anything, so the
++            # file identifier must exist exactly as it would for main().
++            if 'f' not in self.override_flags:
++                self.input_file = self._open_input_file(self.args.input_path)
++            try:
++                csvai.integration.run(self)
++            finally:
++                if 'f' not in self.override_flags:
++                    self.input_file.close()
++            return
++
+         if 'f' not in self.override_flags:
+             self.input_file = self._open_input_file(self.args.input_path)
+ 
+@@ -262,10 +280,35 @@
+                 help='When interpreting or displaying column numbers, use zero-based numbering instead of the default '
+                      '1-based numbering.')
+ 
++        # Optional AI assistance. Registered only when the csvai package is
++        # importable, so an install without it has a byte-identical --help and
++        # a byte-identical default code path.
++        self._add_ai_arguments()
++
+         self.argparser.add_argument(
+             '-V', '--version', action='version', version='%(prog)s 2.2.0',
+             help='Display version information and exit.')
+ 
++    #: Subclasses set this to opt into the optional AI flags.
++    ai_capable = False
++
++    def _add_ai_arguments(self):
++        """
++        Register --ai flags if, and only if, the optional csvai layer exists.
++
++        Deliberately silent when csvai is missing: no warning, no stub flag.
++        A user who has not installed the extra should not learn about it from
++        an error message, and more importantly their command line must behave
++        exactly as it did before.
++        """
++        if not self.ai_capable:
++            return
++        try:
++            import csvai.integration
++        except ImportError:
++            return
++        csvai.integration.add_arguments(self.argparser)
++
+     def _open_input_file(self, path, opened=False):
+         """
+         Open the input file specified on the command line.
+--- a/csvkit/utilities/csvcut.py
++++ b/csvkit/utilities/csvcut.py
+@@ -17,6 +17,7 @@
+ 
+ 
+ class CSVCut(CSVKitUtility):
++    ai_capable = True
+     description = 'Filter and truncate CSV files. Like the Unix "cut" command, but for tabular data.'
+     override_flags = ['L', 'I']
+ 
+--- a/csvkit/utilities/csvgrep.py
++++ b/csvkit/utilities/csvgrep.py
+@@ -11,6 +11,7 @@
+ 
+ 
+ class CSVGrep(CSVKitUtility):
++    ai_capable = True
+     description = 'Search CSV files. Like the Unix "grep" command, but for tabular data.'
+     override_flags = ['L', 'I']
+ 
