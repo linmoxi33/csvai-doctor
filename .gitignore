@@ -1,0 +1,12 @@
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+build/
+dist/
+.venv/
+.csvai.toml
+# The patched csvkit checkout is a local test fixture, not source.
+# Recreate it with: patch -p1 < patches/0001-add-optional-ai-hook.patch
+_csvkit_patched/
