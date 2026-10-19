@@ -29,17 +29,15 @@ jobs:
           pip install "csvkit==2.2.0" pytest
           pip install -e .
 
-      - name: Prepare patched csvkit for --ai tests
+      - name: Apply the patch to installed csvkit
         shell: bash
         run: |
-          # Apply our patch to a pristine csvkit checkout. A failure here means
-          # the patch no longer applies to the pinned upstream version, which is
-          # a release blocker rather than a test flake.
-          python -c "import csvkit, os; print(os.path.dirname(csvkit.__file__))" > csvkit_path.txt
-          CSVKIT_DIR=$(python -c "import csvkit, os; print(os.path.dirname(os.path.dirname(csvkit.__file__)))")
-          echo "csvkit at $CSVKIT_DIR"
-          cd "$CSVKIT_DIR"
-          patch -p1 --dry-run < "$GITHUB_WORKSPACE/patches/0001-add-optional-ai-hook.patch"
+          # The tests import csvkit from _csvkit_patched/, which does not exist in
+          # a fresh clone (it is gitignored). Build it the same way a user would:
+          # from the pinned upstream version, then apply the patch. This is also
+          # the check that the patch still applies to that exact version - a
+          # failure here means a release blocker, not a test flake.
+          bash tools/setup_patched_csvkit.sh
 
       - name: Run csvai tests
         run: python -m pytest tests/ -q
