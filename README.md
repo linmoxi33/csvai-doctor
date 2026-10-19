@@ -236,8 +236,12 @@ tests/test_integration.py::test_help_is_unchanged_without_csvai[csvsql]   PASSED
 tests/test_integration.py::test_help_is_unchanged_without_csvai[csvclean] PASSED
 ```
 
-Those compare `--help` **byte for byte** against fixtures captured from a pristine upstream
-checkout, run from a temporary cwd where `import csvai` fails. A diff means the patch leaked.
+Those run `--help` from a temporary cwd where `import csvai` fails, and assert that **no AI flag
+appears and the option set is identical to upstream's**. They do not compare raw bytes, because
+argparse's rendering changed between Python 3.12 and 3.13 (`-d DELIMITER, --delimiter DELIMITER`
+became `-d, --delimiter DELIMITER`) — that is upstream churn, not a leak, and asserting on it would
+have made CI red on a different interpreter for reasons unrelated to this patch. A byte-for-byte
+check still runs, gated on the fixtures' recorded interpreter version.
 
 **Upstream behaviour is untouched.** After applying the patch:
 
