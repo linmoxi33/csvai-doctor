@@ -28,6 +28,23 @@ HERE = Path(__file__).resolve().parent
 ROOT = HERE.parent
 FIXTURES = HERE / 'fixtures'
 
+#: A directory containing a ``csvai`` package that raises ImportError. Putting it
+#: first on PYTHONPATH shadows any real install, which is how we reproduce "the
+#: extra is not installed" on a machine where it demonstrably is.
+_BLOCKER_DIR = HERE / '_no_csvai'
+
+
+def _write_blocker():
+    _BLOCKER_DIR.mkdir(exist_ok=True)
+    (_BLOCKER_DIR / 'csvai').mkdir(exist_ok=True)
+    (_BLOCKER_DIR / 'csvai' / '__init__.py').write_text(
+        'raise ImportError("csvai is intentionally unavailable in this test")\n',
+        encoding='utf-8',
+    )
+
+
+_write_blocker()
+
 
 # -- 1. byte-identical help --------------------------------------------
 
@@ -36,6 +53,15 @@ def _help_lines(command, cwd):
     env = dict(os.environ)
     env['PYTHONPATH'] = str(ROOT / '_csvkit_patched')
     env.pop('CSVAI_CONFIG', None)
+    # A working install would make csvai importable from site-packages even with
+    # a narrowed PYTHONPATH (CI does `pip install -e .`), which would defeat the
+    # whole point of this test. PYTHONNOUSERSITE plus the blocked import below
+    # closes that hole.
+    env['PYTHONNOUSERSITE'] = '1'
+    env['PYTHONPATH'] = os.pathsep.join([
+        str(ROOT / '_csvkit_patched'),
+        str(_BLOCKER_DIR),
+    ])
     result = subprocess.run(
         [sys.executable, '-m', f'csvkit.utilities.{command}', '--help'],
         cwd=str(cwd), env=env, capture_output=True, text=True, encoding='utf-8',
